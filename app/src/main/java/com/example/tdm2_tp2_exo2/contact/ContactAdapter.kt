@@ -8,25 +8,18 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.tdm2_tp2_exo2.R
 import kotlinx.android.synthetic.main.contact_child.view.*
 
-class ContactAdapter(items : List<Contact>, ctx: Context) : RecyclerView.Adapter<ContactAdapter.ViewHolder>(){
+class  ContactAdapter(var clickListner: OnContactListener, var listcontact:List<Contact>) : RecyclerView.Adapter<RecyclerView.ViewHolder>()
+{
 
-    private var list = items
-    private var context = ctx
+    private val TAG: String = "AppDebug"
 
-    override fun getItemCount(): Int {
-        return list.size
-    }
+    private var items=listcontact
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.name.text = list[position].name
-        holder.num.text = list[position].num
-        holder.email.text = list[position].email
-        holder.select = list[position].select
-    }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        return ViewHolder(
-            LayoutInflater.from(context).inflate(
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        return ContactViewHolder(
+            LayoutInflater.from(parent.context).inflate(
                 R.layout.contact_child,
                 parent,
                 false
@@ -34,13 +27,59 @@ class ContactAdapter(items : List<Contact>, ctx: Context) : RecyclerView.Adapter
         )
     }
 
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        when(holder) {
 
+            is ContactViewHolder -> {
+                holder.bind(items.get(position), clickListner)
+            }
 
-
-    class ViewHolder(v: View) : RecyclerView.ViewHolder(v){
-        val name = v.name!!
-        val num = v.num!!
-        val email = v.email!!
-        var select = v.select!!.didTouchFocusSelect()
+        }
     }
+
+    override fun getItemCount(): Int {
+        return items.size
+    }
+
+    fun submitList(contact: List<Contact>){
+        items = contact
+    }
+
+    class ContactViewHolder
+    constructor(
+        itemView: View
+    ): RecyclerView.ViewHolder(itemView){
+
+        val name = itemView.name
+        val num = itemView.num
+        val email = itemView.email
+        val select= itemView.select
+
+        fun bind(contact: Contact, action: OnContactListener){
+
+
+            name.setText(contact.name)
+            num.setText(contact.num)
+            email.setText(contact.email)
+            if(contact.select){
+                select.setChecked(true)
+
+            }
+
+            itemView.setOnClickListener{
+                action.onContactClick(contact, adapterPosition )
+            }
+
+
+
+        }
+
+
+
+    }
+
+    public interface OnContactListener {
+        fun onContactClick(contact: Contact, position: Int)
+    }
+
 }

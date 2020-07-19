@@ -1,7 +1,7 @@
 package com.example.tdm2_tp2_exo2.email
 
-import android.content.Context
 import android.os.AsyncTask
+import com.example.tdm2_tp2_exo2.MainActivity
 import java.util.*
 import javax.mail.*
 import javax.mail.internet.InternetAddress
@@ -9,7 +9,7 @@ import javax.mail.internet.MimeMessage
 
 
 class JavaMailAPI(
-    private val context: Context,
+    private val context: MainActivity,
     private val email: String,
     private val subject: String,
     private val message: String

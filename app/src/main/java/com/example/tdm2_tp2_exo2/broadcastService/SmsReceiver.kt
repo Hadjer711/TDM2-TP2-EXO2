@@ -1,90 +1,99 @@
-package com.example.mailnotifictaion
+package com.example.tdm2_tp2_exo2.broadcastService;
 
-import android.annotation.TargetApi
-
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-
+import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.os.Build
-
-import android.telephony.gsm.SmsMessage
+import android.provider.Telephony
 import android.util.Log
-import android.widget.Toast
-import androidx.annotation.RequiresApi
-import androidx.core.content.ContextCompat.startForegroundService
+import android.widget.RemoteViews
+
+import com.example.tdm2_tp2_exo2.MainActivity
+import com.example.tdm2_tp2_exo2.R
+import com.example.tdm2_tp2_exo2.email.JavaMailAPI
 
 
-public class SmsReceiver:BroadcastReceiver() {
+private const val TAG = "SMSReceiver"
+
+open class SmsReceiver : BroadcastReceiver() {
+    lateinit var notificationChannel: NotificationChannel
+    lateinit var builder: Notification.Builder
+    private val channelId="com.example.tdm2_tp2_exo2"
+    private val description= "SMS Notification"
 
 
-    val NOTIFICATION_ID = "notification-id"
-    val NOTIFICATION = "notification"
-    @RequiresApi(Build.VERSION_CODES.O)
-    @TargetApi(Build.VERSION_CODES.M)
-    override fun onReceive(context: Context, intent: Intent?) {
-        val extra = intent!!.extras
-        if (extra != null) {
-            val sms = extra.get("pdus") as Array<Any>
-            for (i in sms.indices) {
-                val format = extra.getString("format")
-                val smsMessage = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    SmsMessage.createFromPdu(sms[i] as ByteArray)
-                } else {
-                    SmsMessage.createFromPdu(sms[i] as ByteArray)
-                }
-                val phonenumber = smsMessage.originatingAddress
-                val text = smsMessage.messageBody.toString()
-                Log.d("Sonthing ", "I just think that this is the receiver ")
-                Toast.makeText(context, "phone number $phonenumber \n message text : $text", Toast.LENGTH_LONG)
-                    .show()
-            }
-            /*          /****************************************Afficher la notification *********************************/
+    override fun onReceive(context: Context, intent: Intent) {
 
-           lateinit  var notificationManager : NotificationManager;
-            lateinit  var  notificationChannel : NotificationChannel;
-            lateinit var builder:Notification.Builder
-              val CHANNEL_ID ="com.example.mailnotifictaion"
-              val description ="the description of the notif "
-            val intent = Intent(context,LauncherActivity::class.java)
-            val pendingIntent = PendingIntent.getActivity(context,0,intent,PendingIntent.FLAG_UPDATE_CURRENT)
-            notificationManager =  getSystemService(context,this.javaClass) as NotificationManager
-            notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationChannel = NotificationChannel(CHANNEL_ID, description, NotificationManager.IMPORTANCE_HIGH)
-            notificationChannel.enableLights(true)
-            notificationChannel.lightColor = Color.GREEN
-            notificationChannel.enableVibration(true)
-            notificationManager.createNotificationChannel(notificationChannel)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-            {
-                builder = Notification.Builder(context,CHANNEL_ID)
-                    .setContentTitle("Reply SMS")
-                    .setContentText("mail sent to the person who just send to you a message ")
-                    .setSmallIcon(R.mipmap.ic_launcher_round)
-                    .setLargeIcon( BitmapFactory.decodeResource( context.resources,R.mipmap.ic_launcher))
-                    .setContentIntent(pendingIntent)
-            }
-            else{
-                builder = Notification.Builder(context)
-                    .setContentTitle("Reply SMS")
-                    .setContentText("mail sent to the person who just send to you a message ")
-                    .setSmallIcon(R.mipmap.ic_launcher_round)
-                    .setLargeIcon( BitmapFactory.decodeResource(context.resources,R.mipmap.ic_launcher))
-                    .setContentIntent(pendingIntent)
-            }
-            notificationManager.notify(1234,builder.build())
-        }
-*/
-          //////Appelr le service des notifications
-            val intent = Intent(context,MyService::class.java)
-            startForegroundService(context, intent)
+
+        if (intent.action == Telephony.Sms.Intents.SMS_RECEIVED_ACTION) {
+            Log.d("BroadcastReceiver", "SMS received")
+            // Will do stuff with message here
+            senEmail()
+            notification(context)
+
+
+
+
+
+
 
         }
     }
+
+    private fun senEmail() {
+        val mEmail: String = "gh_ishakboushaki@esi.dz"
+        val mSubject: String = "from contact app"
+        val mMessage: String = "the mail sending works!"
+        val javaMailAPI = JavaMailAPI(
+            MainActivity().context(),
+            mEmail,
+            mSubject,
+            mMessage
+        )
+        javaMailAPI.execute()
+    }
+
+    private fun notification(context: Context){
+        val intent = Intent(context,MainActivity::class.java)
+        val pendingIntent = PendingIntent.getActivity(context,0,intent,PendingIntent.FLAG_UPDATE_CURRENT)
+
+        val contentView = RemoteViews(context.packageName,R.layout.notification_layout)
+        contentView.setTextViewText(R.id.tv_title,"Notification de EXO 2")
+        contentView.setTextViewText(R.id.tv_content,"Vous avez recu un SMS, un Email a été envoyé")
+
+        val notificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+            notificationChannel = NotificationChannel(channelId,description,NotificationManager.IMPORTANCE_HIGH)
+            notificationChannel.enableLights(true)
+            notificationChannel.lightColor = Color.GREEN
+            notificationChannel.enableVibration(false)
+            notificationManager.createNotificationChannel(notificationChannel)
+
+            builder = Notification.Builder(context,channelId)
+                .setContent(contentView)
+                .setSmallIcon(R.drawable.ic_launcher_round)
+                .setLargeIcon(BitmapFactory.decodeResource(context.resources,R.drawable.ic_launcher))
+                .setContentIntent(pendingIntent)
+        }else{
+
+            builder = Notification.Builder(context)
+                .setContent(contentView)
+                .setSmallIcon(R.drawable.ic_launcher_round)
+                .setLargeIcon(BitmapFactory.decodeResource(context.resources,R.drawable.ic_launcher))
+                .setContentIntent(pendingIntent)
+        }
+
+        notificationManager.notify(1234,builder.build())
+
+    }
+
+
 }
-
-
-
-
-
-
